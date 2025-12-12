@@ -186,7 +186,7 @@ def _nequick(
             dset: "Dataset", 
             sys_idx: np.ndarray, 
             freq: Enum, 
-            nequick_para,
+            nequick_para: List[float],
     ) -> np.ndarray:
     """Get Nequick ionospheric correction for a Dataset subset
     
@@ -228,7 +228,7 @@ def _ntcm(
             dset: "Dataset", 
             sys_idx: np.ndarray, 
             freq: Enum, 
-            ntcm_para,
+            ntcm_para: List[float],
     ) -> np.ndarray:
     """Get NTCM ionospheric correction for a Dataset subset
     
