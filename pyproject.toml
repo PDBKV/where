@@ -1,5 +1,5 @@
 [build-system]
-requires = ["meson-python", "ninja", "numpy>=1.26", "pycurl", "cython>=3.0"]
+requires = ["meson>=1.10,<1.11", "ninja", "numpy>=1.26", "pycurl", "cython>=3.0"]
 build-backend = "mesonpy"
 
 [project]
@@ -58,8 +58,11 @@ where_tools    = "where.tools:main"
 
 [dependency-groups]
 dev = [
-  "meson-python>=0.15.0", "meson", "ninja", "numpy>=2.0", "cython>=3.0",
-  "black", "bump-my-version", "flake8", "ipython", "line_profiler",
+  "meson-python>=0.15.0",
+  "meson>=1.10,<1.11",
+  "ninja", "numpy>=2.0", "cython>=3.0",
+  "black", "bump-my-version", "flake8", 
+  "ipython", "line_profiler",
   "mypy", "pytest", "pytest-cov",
 ]
 docs = ["markdown", "pelican"]
