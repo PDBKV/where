@@ -42,6 +42,9 @@ dependencies = [
   "seaborn",
 ]
 
+[tool.uv.sources]
+midgard = { git = "https://github.com/PDBKV/midgard", branch = "master" }
+
 [project.urls]
 Homepage = "https://github.com/kartverket/where"
 
