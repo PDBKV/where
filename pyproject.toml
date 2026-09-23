@@ -1,19 +1,62 @@
 [build-system]
-requires = ["meson-python", "ninja", "numpy>=1.26"]
+requires = ["meson-python", "ninja", "numpy>=1.26", "pycurl"]
 build-backend = "mesonpy"
 
 [project]
 name = "where"
 dynamic = ["version"]
-description = "..."
+description = "Where, analysis of space geodetic data"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
-authors = [{name = "You", email = "you@example.com"}]
-classifiers = ["Programming Language :: Python :: 3"]
+authors = [{name = "Norwegian Mapping Authority", email = "ann-silje.kirkvik@kartverket.no"}]
+keywords = ["referenceframe","vlbi","slr","gnss"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Natural Language :: English",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering",
+]
 dependencies = [
-    "numpy>=1.26",
+  "cartopy",
+  "colorama",
+  "folium",
+  "h5py",
+  "ipython",
+  "jplephem",
+  "matplotlib>=3.1.1",
+  "midgard>=1.3.0",
+  "netCDF4",
+  "numpy",
+  "pandas",
+  "pint",
+  "pycurl",
+  "python-editor",
+  "requests",
+  "scipy",
+  "seaborn",
 ]
 
-[tool.setuptools.dynamic]
-version = {attr = "where.__version__"}
+[project.urls]
+Homepage = "https://github.com/kartverket/where"
+
+[project.scripts]
+where          = "where.__main__:main"
+where_profiler = "where.tools.profiler:profiler"
+where_runner   = "where.runner:main"
+there          = "where.there:main"
+where_tools    = "where.tools:main"
+
+
+[dependency-groups]
+dev = [
+  "meson-python>=0.15.0", "meson", "ninja", "numpy>=2.0", "cython>=3.0",
+  "black", "bump-my-version", "flake8", "ipython", "line_profiler",
+  "mypy", "pytest", "pytest-cov",
+]
+docs = ["markdown", "pelican"]
