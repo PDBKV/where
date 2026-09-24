@@ -42,6 +42,12 @@ dependencies = [
   "seaborn",
 ]
 
+[tool.uv]
+cache-keys = [
+  { file = "pyproject.toml" },
+  { file = "meson.build" },
+]
+
 [tool.uv.sources]
 midgard = { git = "https://github.com/PDBKV/midgard", branch = "master" }
 

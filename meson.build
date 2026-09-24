@@ -102,12 +102,14 @@ foreach d : cython_dirs
   pyx_files = run_command(py, list_src, meson.project_source_root() / d,
     '--ext', '.pyx', check: true).stdout().strip().split('\n')
 
+
   foreach pyx : pyx_files
-    py.extension_module(fs.stem(pyx),     # "kepler.pyx" -> module named "kepler"
-      pyx,
+    rel = pyx.replace(meson.project_source_root() + '/', '')   # -> where/models/orbit/foo.pyx
+    py.extension_module(fs.stem(rel),
+      rel,
       cython_args: ['-3', '-X', 'boundscheck=False', '-X', 'cdivision=True'],
       dependencies: [np_dep],
-      subdir: d,                          # installs as where/models/orbit/kepler...so
+      subdir: d,
       install: true,
     )
   endforeach
