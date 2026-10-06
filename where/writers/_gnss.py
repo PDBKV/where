@@ -47,6 +47,7 @@ def get_grc_csv_row(
             result: float, 
             station: str="",
             satellite: str="",
+            has: bool = False,
 ) -> List[str]:
     """Create row in GRC CSV format in dependency of given arguments
 
@@ -88,22 +89,36 @@ def get_grc_csv_row(
         "L2": "LNAV",
         "L1/L2": "LNAV"
     }
+    if has:
+        performance_indicator_code = {
+                "hpe": "GNSS-HAS-KPI-05",
+                "sisre": "GNSS-HAS-FOM-05",
+                "sisre_sat": "GNSS-HAS-FOM-06",
+                "vpe": "GNSS-HAS-KPI-06",
+        }
 
-    performance_indicator_code = {
-            "hpe": "GNSS-OS-FOM-07",
-            "site_vel_3d": "GNSS-OS-FOM-09",
-            "sisre": "GNSS-OS-KPI-09",
-            "sisre_sat": "GNSS-OS-KPI-10",
-            "vpe": "GNSS-OS-FOM-08",
-    }
+        performance_indicator_name = {
+                "hpe": "HAS Horizontal Positioning Accuracy per Station over Month",
+                "sisre": "SIS Ranging Accuracy at GA over all Satellites over Month",
+                "sisre_sat": "SIS Ranging Accuracy at GA per Satellite over Month",
+                "vpe": "HAS Vertical Positioning Accuracy per Station over Month",
+        } 
+    else:
+        performance_indicator_code = {
+                "hpe": "GNSS-OS-FOM-07",
+                "site_vel_3d": "GNSS-OS-FOM-09",
+                "sisre": "GNSS-OS-KPI-09",
+                "sisre_sat": "GNSS-OS-KPI-10",
+                "vpe": "GNSS-OS-FOM-08",
+        }
 
-    performance_indicator_name = {
-            "hpe": "Horizontal Positioning Service Accuracy per Station over Month",
-            "site_vel_3d": "3D Velocity Service Accuracy per Station over Month",
-            "sisre": "SIS Ranging Accuracy at GA over all Satellites over Month",
-            "sisre_sat": "SIS Ranging Accuracy at GA per Satellite over Month",
-            "vpe": "Vertical Positioning Service Accuracy per Station over Month",
-    } 
+        performance_indicator_name = {
+                "hpe": "Horizontal Positioning Service Accuracy per Station over Month",
+                "site_vel_3d": "3D Velocity Service Accuracy per Station over Month",
+                "sisre": "SIS Ranging Accuracy at GA over all Satellites over Month",
+                "sisre_sat": "SIS Ranging Accuracy at GA per Satellite over Month",
+                "vpe": "Vertical Positioning Service Accuracy per Station over Month",
+        } 
 
     # TODO: Better solution? dset.meta["obstypes"] handling has to be improved.
     mode_def = {
