@@ -21,18 +21,17 @@ def get_grc_csv_header() -> List[str]:
     """
     return [
             "Constellation",
-            "Service Line",
-            "Service Category",
-            "Business Service",
+            "Performance Indicator Code",
+            "Performance Indicator Name",
             "Batch",
             "Satellite",
             "PRN",
             "Slot",
-            "GSS Site",
-            "Station",
-            "Service",
-            "Type",
-            "Mode",
+            "Station Identifier",
+            "Navigation Message",
+            "Signal Combination",
+            "Signal",
+            "Dissemination mean",
             "Target",
             "Unit",
             "Date",
@@ -68,8 +67,10 @@ def get_grc_csv_row(
     slot = ""
 
     batch_def = { 
-            "GALILEO-1": "IOV",
-            "GALILEO-2": "FOC",
+            "GALILEO-1": "G1 IOV",
+            "GALILEO-2": "G1 FOC",
+            "GALILEO-3": "G2 IOV",
+            "GALILEO-4": "G2 FOC",
             "BLOCK IIIA": "III",
             "BLOCK IIF": "IIF",
             "BLOCK IIR-A": "IIR",
@@ -77,29 +78,31 @@ def get_grc_csv_row(
             "BLOCK IIR-M": "IIR-M",
     }
 
-    business_def = {
-            "Galileo": {
-                "hpe": "FOM-OS-07: Horizontal Positioning Service Accuracy per Station over Month",
-                "site_vel_3d": "FOM-OS-11: 3D Velocity Service Accuracy per Station over Month",
-                "sisre": "SDD-OS-09: SIS Ranging Accuracy at GA over All Satellites over Month",
-                "sisre_sat": "SDD-OS-10: SIS Ranging Accuracy at GA per Satellite over Month",
-                "vpe": "FOM-OS-08: Vertical Positioning Service Accuracy per Station over Month",
-            },
-            "GPS": {
-                "hpe": "FOM-OS-07: Horizontal Positioning Service Accuracy per Station over Month",
-                "site_vel_3d": "FOM-OS-11: 3D Velocity Service Accuracy per Station over Month",
-                "sisre": "SPS-OS-02: SIS Ranging Accuracy over All Satellites over Month",
-                "sisre_sat": "SPS-OS-03: SIS Ranging Accuracy per Satellite over Month",
-                "vpe": "FOM-OS-08: Vertical Positioning Service Accuracy per Station over Month",
-            },
+    message_type = {
+        "E1" : "INAV",
+        "E5b": "INAV",
+        "E5a": "FNAV",
+        "E1/E5b": "INAV",
+        "E1/E5a": "FNAV",
+        "L1": "LNAV",
+        "L2": "LNAV",
+        "L1/L2": "LNAV"
     }
 
-    category_def = {
-            "hpe": "Position Domain",
-            "site_vel_3d": "Position Domain",
-            "sisre": "Ranging Domain",
-            "sisre_sat": "Ranging Domain",
-            "vpe": "Position Domain",
+    performance_indicator_code = {
+            "hpe": "GNSS-OS-FOM-07",
+            "site_vel_3d": "GNSS-OS-FOM-09",
+            "sisre": "GNSS-OS-KPI-09",
+            "sisre_sat": "GNSS-OS-KPI-10",
+            "vpe": "GNSS-OS-FOM-08",
+    }
+
+    performance_indicator_name = {
+            "hpe": "Horizontal Positioning Service Accuracy per Station over Month",
+            "site_vel_3d": "3D Velocity Service Accuracy per Station over Month",
+            "sisre": "SIS Ranging Accuracy at GA over all Satellites over Month",
+            "sisre_sat": "SIS Ranging Accuracy at GA per Satellite over Month",
+            "vpe": "Vertical Positioning Service Accuracy per Station over Month",
     } 
 
     # TODO: Better solution? dset.meta["obstypes"] handling has to be improved.
@@ -184,20 +187,20 @@ def get_grc_csv_row(
             "GSAT0232": "A08",
     }
 
-    station_def = {
-            "altc": "Alta (Norway)",
-            "brux": "Brussels (Belgium)",
-            "cpvg": "Cap-Vert (Cabo Verde)",
-            "koug": "Kourou (French Guiana)",
-            "hofs": "Hoefn (Iceland)",
-            "hof2": "Hoefn (Iceland)",
-            "hons": "Honningsvag (Norway)",
-            "janm": "Jan Mayen (Norway)",
-            "krss": "Kristiansand (Norway)",
-            "mas1": "Maspalomas (Spain)",
-            "nabd": "Ny Alesund (Norway)",
-            "nklg": "N' Koltang (Gabon)",
-            "vegs": "Vega (Norway)",
+    station_identifier = {
+            "altc": "ALTC00NOR",
+            "brux": "BRUX00BEL",
+            "cpvg": "CPVG00CPV",
+            "koug": "KOUG00GUF",
+            "hofs": "HOFS00ISL",
+            "hof2": "HOF200ISL",
+            "hons": "HONS00NOR",
+            "janm": "JANM00NOR",
+            "krss": "KRSS00NOR",
+            "mas1": "MAS100ESP",
+            "nabd": "NABD00NOR",
+            "nklg": "NKLG00GAB",
+            "vegs": "VEGS00NOR",
     }
 
     target_def = {
@@ -219,11 +222,11 @@ def get_grc_csv_row(
     }
 
     mode_to_write = mode_def[mode] if mode in mode_def.keys() else mode
-    station_to_write = station_def[station] if station in station_def.keys() else ""
+    station_to_write = station_identifier[station] if station in station_identifier.keys() else ""
+    used_date = datetime.strptime(f"{date}-01", "%Y-%b-%d")
 
     if satellite:
         atx = apriori.get("gnss_antenna_correction")
-        used_date = datetime.strptime(f"{date}-01", "%Y-%b-%d")
         sat_info = atx.get_satellite_info(satellite, used_date)
 
         batch = batch_def[sat_info["sat_type"]] if sat_info["sat_type"] in batch_def.keys() else ""
@@ -238,21 +241,20 @@ def get_grc_csv_row(
 
     return [
         constellation, # Constellation
-        "Open Service", # Service Line
-        category_def[kpi], # Service Category
-        business_def[constellation][kpi], # Business Service
+        performance_indicator_code[kpi], # Service Category
+        performance_indicator_name[kpi], # Business Service
         batch, # Batch
         svn, # Satellite
         satellite, # PRN
         slot, # Slot
         station_to_write, # GSS Site
-        station.upper(), # Station
-        "OS", # Service
+        message_type[mode_to_write],
         type_, # Type
         mode_to_write, # Mode
+        "SIS",
         target_def[kpi], # Target
         unit_def[kpi], # Unit
-        date, # Month/Year
+        f"{used_date.year}-{used_date.month}", # Month/Year
         f"{result:.3f}", # Result
     ]
 
