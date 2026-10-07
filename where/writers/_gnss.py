@@ -133,13 +133,9 @@ def get_grc_csv_row(
     }
 
     slot_def = {
-            "SVN41": "B03",
-            "SVN43": "F06",
             "SVN44": "B03",
-            "SVN45": "D03",
             "SVN48": "A04",
             "SVN50": "E03",
-            "SVN51": "F05",
             "SVN52": "A02",
             "SVN53": "C04",
             "SVN55": "F02",
@@ -149,7 +145,6 @@ def get_grc_csv_row(
             "SVN59": "C05",
             "SVN61": "D01",
             "SVN62": "B02",
-            "SVN63": "D02",
             "SVN64": "A03",
             "SVN65": "A01",
             "SVN66": "C02",
@@ -168,42 +163,42 @@ def get_grc_csv_row(
             "SVN79": "A06",
             "SVN80": "D02",
             "SVN81": "E06",
-            "SVN82": "F5",
-            "SVN83": "A5",
-            "GSAT0101": "B05",
-            "GSAT0102": "B06",
-            "GSAT0103": "C04",
-            "GSAT0104": "C14",
-            "GSAT0201": "EXT01",
-            "GSAT0202": "EXT02",
-            "GSAT0203": "B08",
-            "GSAT0204": "B14",
-            "GSAT0205": "A08",
-            "GSAT0206": "A05",
-            "GSAT0207": "C06",
-            "GSAT0208": "C07",
-            "GSAT0209": "C02",
-            "GSAT0210": "A12",
-            "GSAT0211": "A06",
-            "GSAT0212": "C08",
-            "GSAT0213": "C03",
-            "GSAT0214": "C01",
-            "GSAT0215": "A03",
-            "GSAT0216": "A07",
-            "GSAT0217": "A04",
-            "GSAT0218": "A01",
-            "GSAT0219": "B04",
-            "GSAT0220": "B01",
-            "GSAT0221": "B02",
-            "GSAT0222": "B07",
-            "GSAT0223": "B03",
-            "GSAT0224": "B15",
-            "GSAT0225": "C05",
-            "GSAT0226": "A02",
-            "GSAT0227": "C12",
-            "GSAT0232": "A08",
-            "GSAT0233": "C13",
-            "GSAT0234": "C17",
+            "SVN82": "F05",
+            "SVN83": "A05",
+            "GSAT0101": "B05", #Nominal
+            "GSAT0102": "B06", #Nominal
+            "GSAT0103": "C04", #Nominal
+            "GSAT0203": "B08", #Nominal
+            "GSAT0206": "A05", #Nominal
+            "GSAT0208": "C07", #Nominal
+            "GSAT0209": "C02", #Nominal
+            "GSAT0211": "A06", #Nominal
+            "GSAT0207": "C06", #Nominal
+            "GSAT0212": "C08", #Nominal
+            "GSAT0213": "C03", #Nominal
+            "GSAT0214": "C01", #Nominal
+            "GSAT0215": "A03", #Nominal
+            "GSAT0216": "A07", #Nominal
+            "GSAT0217": "A04", #Nominal
+            "GSAT0218": "A01", #Nominal
+            "GSAT0219": "B04", #Nominal
+            "GSAT0220": "B01", #Nominal
+            "GSAT0221": "B02", #Nominal
+            "GSAT0222": "B07", #Nominal
+            "GSAT0223": "B03", #Nominal
+            "GSAT0225": "C05", #Nominal
+            "GSAT0226": "A02", #Nominal
+            "GSAT0232": "A08", #Nominal
+            "GSAT0201": "Ext01", #Auxiliary
+            "GSAT0202": "Ext02", #Auxiliary
+            "GSAT0224": "B15", #Auxiliary
+            "GSAT0227": "C12", #Auxiliary
+            "GSAT0233": "C13", #Auxiliary
+            "GSAT0234": "C17", #Auxiliary
+            "GSAT0204": "B14", #Not-In-Service
+            "GSAT0210": "A12", #Not-In-Service
+            "GSAT0104": "None", #Decomissioned
+            "GSAT0205": "None", #Decomissioned
     }
 
     station_identifier = {
