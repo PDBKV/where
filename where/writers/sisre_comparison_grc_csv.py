@@ -119,7 +119,7 @@ def sisre_comparison_grc_csv(dset: "Dataset") -> None:
 
             df_mode = df[idx].pivot(index="time_gps", columns="satellite", values=mode)
             df_mode = df_mode.resample("M").apply(lambda x: np.nanpercentile(x, q=95))
-            df_mode.index = df_mode.index.strftime("%Y-%b")
+            df_mode.index = df_mode.index.strftime("%Y-%m")
             df_mode.index.name = "date"
             df_mode = df_mode.reset_index()
 

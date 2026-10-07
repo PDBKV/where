@@ -168,6 +168,8 @@ def get_grc_csv_row(
             "SVN79": "A06",
             "SVN80": "D02",
             "SVN81": "E06",
+            "SVN82": "F5",
+            "SVN83": "A5",
             "GSAT0101": "B05",
             "GSAT0102": "B06",
             "GSAT0103": "C04",
@@ -200,6 +202,8 @@ def get_grc_csv_row(
             "GSAT0226": "A02",
             "GSAT0227": "C12",
             "GSAT0232": "A08",
+            "GSAT0233": "C13",
+            "GSAT0234": "C17",
     }
 
     station_identifier = {
@@ -238,10 +242,10 @@ def get_grc_csv_row(
 
     mode_to_write = mode_def[mode] if mode in mode_def.keys() else mode
     station_to_write = station_identifier[station] if station in station_identifier.keys() else ""
-    used_date = datetime.strptime(f"{date}-01", "%Y-%b-%d")
 
     if satellite:
         atx = apriori.get("gnss_antenna_correction")
+        used_date = datetime.strptime(f"{date}-01", "%Y-%m-%d")
         sat_info = atx.get_satellite_info(satellite, used_date)
 
         batch = batch_def[sat_info["sat_type"]] if sat_info["sat_type"] in batch_def.keys() else ""
@@ -269,7 +273,7 @@ def get_grc_csv_row(
         "SIS",
         target_def[kpi], # Target
         unit_def[kpi], # Unit
-        f"{used_date.year}-{used_date.month}", # Month/Year
+        date, # Month/Year
         f"{result:.3f}", # Result
     ]
 
