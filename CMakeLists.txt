@@ -48,10 +48,11 @@ if("${HFEOP_CONF}" IS_NEWER_THAN "${HFEOP}/hfeop_xyu_mod.pyf")
     file(TOUCH "${HFEOP}/hfeop_xyu_mod.pyf")
 endif()
 set(HFEOP_SRCS "${HFEOP}/hfeop_xyu_mod.f90")
-f2py_generate_module("${HFEOP}/hfeop_xyu_mod.pyf" ${HFEOP_SRCS} OUTPUT_VARIABLE HFEOP_FILES)
-python_add_library(hfeop MODULE "${HFEOP_FILES}" WITH_SOABI)
-target_link_libraries(hfeop PRIVATE f2py_object)
-install(TARGETS hfeop DESTINATION where/ext)
+configure_file("${HFEOP}/hfeop_xyu_mod.pyf" "${CMAKE_CURRENT_BINARY_DIR}/hf_eop.pyf" COPYONLY)
+f2py_generate_module("${CMAKE_CURRENT_BINARY_DIR}/hf_eop.pyf" ${HFEOP_SRCS} OUTPUT_VARIABLE HFEOP_FILES)
+python_add_library(hf_eop MODULE "${HFEOP_FILES}" WITH_SOABI)
+target_link_libraries(hf_eop PRIVATE f2py_object)
+install(TARGETS hf_eop DESTINATION where/ext)
 
 # ----- IERS -----
 set(IERS_CONF "${CMAKE_CURRENT_SOURCE_DIR}/config/download_iers.conf")
@@ -137,40 +138,3 @@ foreach(_pyx IN LISTS PYX_FILES)
   install(TARGETS ${_pkg}.${_name} DESTINATION "${_rel}")
 endforeach()
 target_compile_definitions(where.models.orbit._orbit PRIVATE CYTHON_TRACE_NOGIL=1)
-
-execute_process(
-    COMMAND "${Python_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/config_wizard.py" 
-    "config/where_local.conf" "--ignore-existing"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    RESULT_VARIABLE _rc
-)
-if(_rc)
-    message(FATAL_ERROR "config_wizard.py failed (${_rc})")
-endif()
-execute_process(
-    COMMAND "${Python_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/config_wizard.py" 
-    "config/there_local.conf" "--ignore-existing"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    RESULT_VARIABLE _rc
-)
-if(_rc)
-    message(FATAL_ERROR "config_wizard.py failed (${_rc})")
-endif()
-execute_process(
-    COMMAND "${Python_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/config_wizard.py" 
-    "config/files_local.conf" "--ignore-existing"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    RESULT_VARIABLE _rc
-)
-if(_rc)
-    message(FATAL_ERROR "config_wizard.py failed (${_rc})")
-endif()
-execute_process(
-    COMMAND "${Python_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/config_wizard.py" 
-    "config/trf_local.conf" "--ignore-existing"
-    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-    RESULT_VARIABLE _rc
-)
-if(_rc)
-    message(FATAL_ERROR "config_wizard.py failed (${_rc})")
-endif()

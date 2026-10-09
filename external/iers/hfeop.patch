@@ -1,0 +1,11 @@
+--- external/iers/hfeop/hfeop_xyu_mod.f90
++++ external/iers/hfeop/hfeop_xyu_mod.f90
+@@ -26,7 +26,7 @@
+ !    Import HFEOP model in IERS format 
+ !
+ ! input
+-      character*80 lhfeop_file     !file that contains the data. 
++      character*256 lhfeop_file     !file that contains the data. 
+ 
+ ! local
+       integer ilu 
