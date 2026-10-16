@@ -8,7 +8,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "where"
-dynamic = "2.1.3"
+version = "2.1.3"
 description = "Where, analysis of space geodetic data"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -70,6 +70,11 @@ editable.rebuild = false
 midgard = { path = "../midgard", editable = true }
 asgard = { path = "../asgard" , editable = true }
 
+[tool.black]
+line-length = 119
+cache-dir = ".cache/black"
+include = '(where|analysis|tests)/.*\.py$'
+
 [project.urls]
 Homepage = "https://github.com/kartverket/where"
 
@@ -89,4 +94,3 @@ dev = [
   "pytest-cov", "f2py-cmake",
 ]
 docs = ["markdown", "pelican"]
-kartverket = ["asgard"]
