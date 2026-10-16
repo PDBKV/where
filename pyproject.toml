@@ -67,7 +67,8 @@ build-dir = "build/editable"
 editable.rebuild = false
 
 [tool.uv.sources]
-midgard = { git = "https://github.com/kartverket/midgard", branch = "master" }
+midgard = { path = "../midgard", editable = true }
+asgard = { path = "../asgard" , editable = true }
 
 [project.urls]
 Homepage = "https://github.com/kartverket/where"
@@ -88,3 +89,4 @@ dev = [
   "pytest-cov", "f2py-cmake",
 ]
 docs = ["markdown", "pelican"]
+kartverket = ["asgard"]
