@@ -17,6 +17,7 @@ from typing import Dict, List, Set, Tuple, Union
 
 # Midgard imports
 from midgard.dev import plugins
+from midgard.dev.timer import Timer
 from midgard.gnss import gnss as mg_gnss
 
 # Where imports
@@ -258,23 +259,26 @@ def orbit(stage: str, dset: "Dataset") -> None:
     #sat_time = dset.time - gnss.get_initial_flight_time(dset)
 
     # Determine initial satellite orbit solution with observation time as approximation
-    orbit.calculate_orbit(dset, time="time")
+    with Timer('Finished calculate orbit in') as t:
+        orbit.calculate_orbit(dset, time="time")
 
     # TODO: Has it an effect to iterate here to improve satellite transmission time?
     # Determine satellite transmission time based on initial satellite orbit solution
-    dset.add_time(
-        "sat_time",
-        val=dset.time
-        - gnss.get_initial_flight_time(
-            dset, 
-            sat_clock_corr=orbit.dset.gnss_satellite_clock, 
-            rel_clock_corr=orbit.dset.gnss_relativistic_clock,
-        ),
-        write_level="operational",
-    )
+    with Timer('Finished get_initial_flight_time in') as t:
+        dset.add_time(
+            "sat_time",
+            val=dset.time
+            - gnss.get_initial_flight_time(
+                dset, 
+                sat_clock_corr=orbit.dset.gnss_satellite_clock, 
+                rel_clock_corr=orbit.dset.gnss_relativistic_clock,
+            ),
+            write_level="operational",
+        )
 
-    # Use satellite transmission time for determination of satellite orbits
-    orbit.calculate_orbit(dset, time="sat_time")
+    with Timer('Finished second calculate orbit in') as t:
+        # Use satellite transmission time for determination of satellite orbits
+        orbit.calculate_orbit(dset, time="sat_time")
         
     # Copy to regular dataset
     dset.add_posvel(
@@ -308,11 +312,12 @@ def orbit(stage: str, dset: "Dataset") -> None:
     dset.site_pos.other = dset.sat_posvel
 
     # Correct satellite position/velocity due Earth's rotation effect during signal flight time
-    sat_pos, sat_vel = gnss.get_earth_rotation(dset)
-    log.warn(
-        "Correction of satellite position/velocity due to Earth's rotation effect during signal flight time is not"
-        " applied."
-    )
+    with Timer("Finished Earth rotation calculation in") as t:
+        sat_pos, sat_vel = gnss.get_earth_rotation(dset)
+        log.warn(
+            "Correction of satellite position/velocity due to Earth's rotation effect during signal flight time is not"
+            " applied."
+        )
 
     # dset.sat_posvel.add_to_itrs(
     #    np.hstack((sat_pos, sat_vel))
@@ -377,8 +382,10 @@ def edit(stage: str, dset: "Dataset") -> None:
         stage:  Name of current stage.
         dset:   A dataset containing the data.
     """
-    cleaners.apply_editors("editors", dset)
-    cleaners.apply_removers("removers", dset)
+    with Timer("Applied editors in") as t:
+        cleaners.apply_editors("editors", dset)
+    with Timer("Applied removers in") as t:
+        cleaners.apply_removers("removers", dset)
     if util.check_write_level("analysis"):
         dset.write_as(stage=stage)
 
@@ -461,7 +468,6 @@ def calculate_estimate(stage: str, dset: "Dataset") -> None:
     max_iterations = config.tech.max_iterations.int
     
     for iter_num in itertools.count(start=1):
-
         # MURKS: Workaround: save estimate Dataset before starting a new iteration.
         #       Store estimate results
         if dset.vars["stage"] == "calculate":
@@ -471,12 +477,15 @@ def calculate_estimate(stage: str, dset: "Dataset") -> None:
         # CALCULATE
         # -----------
         # Correction of station position in GCRS due to loading and tide effects
-        site.calculate_site("site", dset)
+        with Timer(f"iteration {iter_num} finished calculate_site in") as t:
+            site.calculate_site("site", dset)
         delta_pos = site.add("site", dset)
         dset.site_pos[:] = (dset.site_pos.gcrs + delta_pos[0].gcrs).trs
 
         # Initialize models given in configuration file by adding model fields to Dataset
-        delay.calculate_delay("delay", dset)
+
+        with Timer(f"iteration {iter_num} finished calculate_delay in") as t:
+            delay.calculate_delay("delay", dset)
         delta_delay = delay.add("delay", dset)
 
         if "observed" in dset.fields:
@@ -508,11 +517,13 @@ def calculate_estimate(stage: str, dset: "Dataset") -> None:
         estimation.apply_observation_rejector("gnss_satellite_availability", dset)
 
         # Get partial derivates
-        partial_vectors = estimation.partial_vectors(dset, "estimate_method")
+        with Timer(f"iteration {iter_num} finished estimate_partial_vectors in") as t:
+            partial_vectors = estimation.partial_vectors(dset, "estimate_method")
 
         log.blank()  # Space between iterations for clarity
         log.info(f"Estimating parameters for iteration {iter_num}")
-        estimation.call("estimate_method", dset=dset, partial_vectors=partial_vectors, obs_noise=np.ones(dset.num_obs))
+        with Timer(f"iteration {iter_num} finished call estimate in") as t:
+            estimation.call("estimate_method", dset=dset, partial_vectors=partial_vectors, obs_noise=np.ones(dset.num_obs))
         rms = dset.rms("residual")
         log.info(f"{dset.num_obs} observations, postfit residual = {rms:.4f}")
 
@@ -525,7 +536,8 @@ def calculate_estimate(stage: str, dset: "Dataset") -> None:
         # Detect and remove outliers
         num_obs_before = dset.num_obs
         independent = config.tech.estimate_obs_rejectors_independent.bool
-        dset = estimation.apply_observation_rejectors("estimate_obs_rejectors", dset, independent)
+        with Timer(f"iteration {iter_num} finished apply_observation_rejectors in") as t:
+            dset = estimation.apply_observation_rejectors("estimate_obs_rejectors", dset, independent)
 
         if dset.num_obs == 0:
             log.fatal("No observations available.")
@@ -561,7 +573,8 @@ def write(stage: str, dset: "Dataset") -> None:
     """
     writers.write(default_dset=dset)
     if util.check_write_level("operational"):
-        dset.write_as(stage="write")
+        with Timer("Finished write in") as t:
+            dset.write_as(stage="write")
     
     
 
