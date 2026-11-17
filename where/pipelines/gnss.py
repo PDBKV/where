@@ -136,34 +136,35 @@ def read(stage: str, dset: "Dataset") -> None:
 
     # Read GNSS observation data either from Android raw file or RINEX file
     # TODO: Maybe a gnss.py 'obs' modul should be added to ./where/obs?
-    if config.tech.format.str == "android":
-        parser = parsers.parse_key_existing("gnss_android_raw_data", file_vars={**dset.vars, **dset.analysis})
-    else:
-        version, file_path = gnss.get_rinex_file_version("gnss_rinex_obs")
-        log.info(f"Read RINEX file {file_path} with format version {version}.")
-        if version.startswith("2"):
-            parser = parsers.parse_file(
-                "rinex2_obs",
-                file_path=file_path,
-                sampling_rate=sampling_rate,
-                # convert_unit=True,
-            )
-        elif version.startswith("3"):
-            parser = parsers.parse_file(
-                "rinex3_obs",
-                file_path=file_path,
-                sampling_rate=sampling_rate,
-                # convert_unit=True,
-            )
-        elif version.startswith("4"):  #TODO: Own RINEX 4 parser should be implemented. But RINEX 3 parser works also.
-            parser = parsers.parse_file(
-                "rinex3_obs",
-                file_path=file_path,
-                sampling_rate=sampling_rate,
-                # convert_unit=True,
-            )
+    with Timer("Finished read in") as t:
+        if config.tech.format.str == "android":
+            parser = parsers.parse_key_existing("gnss_android_raw_data", file_vars={**dset.vars, **dset.analysis})
         else:
-            log.fatal(f"Unknown RINEX format {version} is used in file {file_path}")
+            version, file_path = gnss.get_rinex_file_version("gnss_rinex_obs")
+            log.info(f"Read RINEX file {file_path} with format version {version}.")
+            if version.startswith("2"):
+                parser = parsers.parse_file(
+                    "rinex2_obs",
+                    file_path=file_path,
+                    sampling_rate=sampling_rate,
+                    # convert_unit=True,
+                )
+            elif version.startswith("3"):
+                parser = parsers.parse_file(
+                    "rinex3_obs",
+                    file_path=file_path,
+                    sampling_rate=sampling_rate,
+                    # convert_unit=True,
+                )
+            elif version.startswith("4"):  #TODO: Own RINEX 4 parser should be implemented. But RINEX 3 parser works also.
+                parser = parsers.parse_file(
+                    "rinex3_obs",
+                    file_path=file_path,
+                    sampling_rate=sampling_rate,
+                    # convert_unit=True,
+                )
+            else:
+                log.fatal(f"Unknown RINEX format {version} is used in file {file_path}")
 
     dset.update_from(parser.as_dataset())
 
@@ -174,11 +175,11 @@ def read(stage: str, dset: "Dataset") -> None:
         val=mg_gnss.get_number_of_satellites(dset.system, dset.satellite, dset.time.gps.datetime),
         write_level="operational",
     )
-
-    # Select and clean GNSS observation to process
-    cleaners.apply_remover("ignore_epochs", dset)
-    cleaners.apply_remover("gnss_select_obs", dset)
-    cleaners.apply_remover("gnss_clean_obs", dset)
+    with Timer("finished clean GNSS in") as t:
+        # Select and clean GNSS observation to process
+        cleaners.apply_remover("ignore_epochs", dset)
+        cleaners.apply_remover("gnss_select_obs", dset)
+        cleaners.apply_remover("gnss_clean_obs", dset)
 
     # Overwrite station coordinates given in RINEX header
     # TODO: Should be a apriori function with, where a station coordinate can be select for a given station.
@@ -242,11 +243,11 @@ def orbit(stage: str, dset: "Dataset") -> None:
     """
     station = dset.vars["station"]
     orb_flag = config.tech.apriori_orbit.str
-
-    # Second estimate using satellite clock and relativistic clock corrections
-    orbit = apriori.get(
-        "orbit", rundate=dset.analysis["rundate"], system=tuple(dset.unique("system")), station=station
-    )
+    with Timer("Finished apriori get in") as t:
+        # Second estimate using satellite clock and relativistic clock corrections
+        orbit = apriori.get(
+            "orbit", rundate=dset.analysis["rundate"], system=tuple(dset.unique("system")), station=station
+        )
     if util.check_write_level("analysis"):
         dset_vars = {**dset.vars, **dset.analysis}
         for key in ["label", "stage"]:
@@ -571,9 +572,9 @@ def write(stage: str, dset: "Dataset") -> None:
         stage (str):          Name of current stage.
         dset (Dataset):       A dataset containing the data.
     """
-    writers.write(default_dset=dset)
-    if util.check_write_level("operational"):
-        with Timer("Finished write in") as t:
+    with Timer("Finished write in") as t:
+        writers.write(default_dset=dset)
+        if util.check_write_level("operational"):
             dset.write_as(stage="write")
     
     
