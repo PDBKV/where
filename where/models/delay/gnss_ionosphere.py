@@ -58,7 +58,6 @@ def gnss_ionosphere(dset: "Dataset") -> np.ndarray:
         )
         return corrections
     iono_para = orbit.dset_raw.meta[rundate]["iono_para"]
-
     for sys in dset.unique("system"):
 
         if config.tech.freq_type.str != "single":
@@ -178,7 +177,6 @@ def _glpp_klobuchar(
     corr_subarray = np.zeros(len(dset.time.gps_ws.seconds[sys_idx]))
     for idx, (sat_pos, time) in enumerate(zip(dset.sat_posvel.itrs_pos[sys_idx], dset.time.gps.gps_seconds[sys_idx])):
         corr_subarray[idx] = klob.get_iono_delay(rec_pos, sat_pos, time, freq, params)
-
     return corr_subarray
 
 
@@ -220,8 +218,7 @@ def _nequick(
         zip(dset.satnum[sys_idx], dset.sat_posvel.trs.pos.val[sys_idx], dset.time.gps.gps_seconds[sys_idx])
     ):
         params.update({"prn": int(prn)})
-        corr_subarray[idx] = nq.get_iono_delay(rec_pos, sat_pos, time, freq, params)
-        
+        corr_subarray[idx] = nq.get_iono_delay(rec_pos, sat_pos, time, freq, params)[0]
     return corr_subarray
 
 def _ntcm(
@@ -262,7 +259,7 @@ def _ntcm(
         zip(dset.satnum[sys_idx], dset.sat_posvel.trs.pos.val[sys_idx], dset.time.gps.gps_seconds[sys_idx])
     ):
         params.update({"prn": int(prn)})
-        corr_subarray[idx] = ntcm.get_iono_delay(rec_pos, sat_pos, time, freq, params)
+        corr_subarray[idx] = ntcm.get_iono_delay(rec_pos, sat_pos, time, freq, params)[0]
         
     return corr_subarray
 
