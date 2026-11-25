@@ -27,6 +27,7 @@ import pandas as pd
 # Midgard imports
 from midgard.collections import enums
 from midgard.dev import plugins
+from midgard.dev.timer import Timer
 from midgard.files import dependencies
 from midgard.math.constant import constant
 from midgard.math.unit import Unit
@@ -208,7 +209,7 @@ class BroadcastOrbit(orbit.AprioriOrbit):
         if "E" in dset_raw.unique("system"):
             self._galileo_signal_health_status()
 
-
+    @Timer("Apriori Orbit edit time")
     def _edit(self, dset_edit: "Dataset") -> None:
         """Edit RINEX navigation file data and save it in a Dataset
 
@@ -304,7 +305,7 @@ class BroadcastOrbit(orbit.AprioriOrbit):
                 unit = self.dset_raw.unit(field)[0] if self.dset_raw.unit(field) else None
                 dset_edit.add_float(field, val=nav_np[:, idx].astype(float), unit=unit)
 
-
+    @Timer("Apriori calculate time: ")
     def _calculate(self, dset_out: "Dataset", dset_in: "Dataset", time: str = "time") -> None:
         """Calculate broadcast ephemeris and satellite clock correction for given observation epochs
 
@@ -353,7 +354,6 @@ class BroadcastOrbit(orbit.AprioriOrbit):
         if "navigation_idx" not in dset_in.fields:
             cleaners.apply_remover("gnss_clean_orbit", dset_in, orbit_flag="broadcast", orbit=self)
         dset_brdc_idx = dset_in.navigation_idx.astype(int)
-
         # Add used navigation message type (useful for postprocessing of Where results)
         navigation_message_type = config.tech.navigation_message_type.dict
         systems = dset_in.unique("system")
@@ -487,6 +487,47 @@ class BroadcastOrbit(orbit.AprioriOrbit):
         """
         return self.dset_edit[field][dset.navigation_idx.astype(int)]
 
+    def get_nearest_idx_fast( #There is something going on here where sometimes it will take the second last message
+                self, 
+                idx_nav: np.ndarray,
+                obs_times: np.ndarray,
+                idx_obs: np.ndarray,
+                time_key: str, 
+                positive : bool = True,
+                fill : int = -1,
+        ) -> np.ndarray:
+        """Gets nearest navigation messages for all epochs for a satellite
+
+        Args:
+            idx:        Index used to filter navigation message e.g. after satellite, GNSS IOD
+            time_key:   Time key
+            positive:   Difference between observation epoch and broadcast navigation message has to be positive
+            satellite:  Satellite name
+            log_level:  Define log level in case no broadcast navigation message data are available 
+
+        Returns:
+            Nearest broadcast navigation messages indices for given observation epochs or None in case no 
+            corresponding broadcast navigation message could be found (this is only valid if 'log_level=fatal')
+        """
+        if not positive:
+            log.fatal("Vectorized get_nearest_idx cannot do two sided search (positive=False)")
+            raise NotImplementedError
+        A = obs_times #observation epoch times
+        B = self.dset_edit[time_key].gps.mjd #navigation message times
+        b_idx = np.flatnonzero(idx_nav) #The original indices in B required to return the correct indices at end
+        order = np.argsort(B[b_idx], kind="stable") #indices of sorted B[b_idx] values
+        b_sorted = B[b_idx][order] #Sorted navigation message times with the indices
+        b_idx_sorted = b_idx[order] #Final indices sorted to match any shuffling in nav message times
+
+        a_vals = A[idx_obs] #The relevant observation epochs (correct satellite)
+        pos = np.searchsorted(b_sorted, a_vals, side="left") -1 #Binary search of sorted nav message times each row is first index where b>=a - 1
+        sub = np.full(a_vals.shape, fill, dtype=int) #initialize return with "no matches -> -1"
+        ok = pos >= 0 #generate mask of obs epochs that found nav message
+        sub[ok] = b_idx_sorted[pos[ok]] #Return positions of those nav messages in original B array
+
+        out = np.full(A.shape, fill, dtype=int)
+        out[idx_obs] = sub
+        return out
 
     def get_nearest_idx(
                 self, 
@@ -498,6 +539,7 @@ class BroadcastOrbit(orbit.AprioriOrbit):
                 iode: Union[float, None] = None,
                 log_level: str = "fatal",
         ) -> float:
+
             """Get nearest navigation message data index for given observation epoch
             
             Args:
@@ -524,7 +566,6 @@ class BroadcastOrbit(orbit.AprioriOrbit):
             # Select nearest naviation message related to given observation epoch
             else: 
                 diff = obs_epoch - self._add_dim(self.dset_edit[time_key].gps.mjd)[idx]
-                
                 
             if positive:
                 data = np.array([99999 if v < 0 else v for v in diff])

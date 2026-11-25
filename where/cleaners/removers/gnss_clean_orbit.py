@@ -25,6 +25,7 @@ import numpy as np
 # Midgard imports
 from midgard.data.time import Time
 from midgard.dev import plugins
+from midgard.dev.timer import Timer
 from midgard.math.unit import Unit
 
 # Where imports
@@ -222,7 +223,7 @@ def _get_navigation_records_and_ignore_epochs(dset: "Dataset", orbit: "AprioriOr
     Returns:
         Array containing False for observations to throw away 
     """
-    keep_idx = np.ones(dset.num_obs, dtype=bool)
+    keep_idx = np.zeros(dset.num_obs, dtype=bool)
     dset_brdc_idx = np.zeros(dset.num_obs, dtype=int)
 
     check_nav_validity_length = config.tech[_SECTION].check_nav_validity_length.bool
@@ -249,42 +250,74 @@ def _get_navigation_records_and_ignore_epochs(dset: "Dataset", orbit: "AprioriOr
     time_key = brdc_block_nearest_to[0]
     positive = True if "positive" in brdc_block_nearest_to else False
 
+    satellites = set(dset.satellite)
+    with Timer("Time for vectorized observation epoch loops") as t:
+        for satellite in satellites:
+            idx_sat_nav = orbit.dset_edit.filter(satellite=satellite)
+            times = dset.time.gps.mjd
+            idx_sat_obs = dset.filter(satellite=satellite)
+            idx_obs = orbit.get_nearest_idx_fast(
+                idx_obs=idx_sat_obs,
+                obs_times=times,
+                idx_nav=idx_sat_nav,
+                time_key=time_key,
+                positive=positive)
+            matched = idx_sat_obs & (idx_obs>=0) #mask of observation times where navigation message was found
+            dset_brdc_idx[matched] = idx_obs[matched]
+            random_index = np.random.randint(0,matched.sum())
+            log.info(f"Quality check for {satellite}, \
+ obs {random_index} has time {times[matched][random_index]}\
+ matched with {orbit.dset_edit.toe.gps[idx_obs[matched][random_index]]}")
+
+            keep_idx[matched] = True
+
+            if check_nav_validity_length:
+                status = _is_epoch_in_navigation_validity_interval(
+                    times[matched],
+                    orbit.dset_edit.toe.gps.mjd[idx_obs[matched]],
+                    orbit.dset_edit.transmission_time.gps.mjd[idx_obs[matched]], #Time of transmission nav message
+                    orbit.dset_edit.fit_interval[idx_obs[matched]], #fit interval?
+                    orbit.dset_edit.iode[idx_obs[matched]], #issue of data ephemeris
+                    satellite=satellite,
+                )
+            keep_idx[matched][status] = True
+
+    """    with Timer("Time for observation epoch loops: ") as t:
     # Loop over all observation epochs
-    for obs, (satellite, time) in enumerate(zip(dset.satellite, dset.time.gps.mjd)):
-        
-        idx_sat = orbit.dset_edit.filter(satellite=satellite)
-        idx_obs = orbit.get_nearest_idx(
-                            idx = idx_sat, 
-                            obs_epoch = time, 
-                            time_key = time_key, 
-                            positive = positive, 
-                            satellite = satellite, 
-                            iode = dset.has_gnssiod_orb[obs] if apply_has_correction else None,
-                            log_level = "debug",
-        )
-
-
-        # Skip epochs for which no broadcast ephemeris are available
-        if idx_obs is None:
-            keep_idx[obs] = False
-            continue  
-
-        idx_obs = idx_sat.nonzero()[0][idx_obs]
-                     
-        if check_nav_validity_length:    
-            status = _is_epoch_in_navigation_validity_interval(
-                                time, 
-                                orbit.dset_edit.toe.gps.mjd[idx_obs], 
-                                orbit.dset_edit.transmission_time.gps.mjd[idx_obs], 
-                                orbit.dset_edit.fit_interval[idx_obs], 
-                                orbit.dset_edit.iode[idx_obs],
-                                satellite,
+        for obs, (satellite, time) in enumerate(zip(dset.satellite, dset.time.gps.mjd)):
+            idx_sat = orbit.dset_edit.filter(satellite=satellite)
+            idx_obs = orbit.get_nearest_idx(
+                                idx = idx_sat, 
+                                obs_epoch = time, 
+                                time_key = time_key, 
+                                positive = positive, 
+                                satellite = satellite, 
+                                iode = dset.has_gnssiod_orb[obs] if apply_has_correction else None,
+                                log_level = "debug",
             )
-            if status == False:
+
+
+            # Skip epochs for which no broadcast ephemeris are available
+            if idx_obs is None:
                 keep_idx[obs] = False
-                continue
-        
-        dset_brdc_idx[obs] = idx_obs
+                continue  
+
+            idx_obs = idx_sat.nonzero()[0][idx_obs]
+                        
+            if check_nav_validity_length:    
+                status = _is_epoch_in_navigation_validity_interval(
+                                    time, 
+                                    orbit.dset_edit.toe.gps.mjd[idx_obs], #Time of ephemeris nav message
+                                    orbit.dset_edit.transmission_time.gps.mjd[idx_obs], #Time of transmission nav message
+                                    orbit.dset_edit.fit_interval[idx_obs], #fit interval?
+                                    orbit.dset_edit.iode[idx_obs], #issue of data ephemeris
+                                    satellite,
+                )
+                if status == False:
+                    keep_idx[obs] = False
+                    continue
+            
+            dset_brdc_idx[obs] = idx_obs"""
 
     num_removed_obs = dset.num_obs - np.count_nonzero(keep_idx)
     log.info(f"Removing {num_removed_obs} observations exceeding validity length")
@@ -311,7 +344,7 @@ def _get_navigation_records_and_ignore_epochs(dset: "Dataset", orbit: "AprioriOr
     return ~remove_idx
 
 
-def _get_time_of_ephemeris_limit(fit_interval: float, system: str) -> float:
+def _get_time_of_ephemeris_limit(fit_interval: float | np.ndarray, system: str) -> float | np.ndarray:
     """ Get time of ephemeris limit
 
     How long a broadcast ephemeris block is valid depends on the GNSS:
@@ -535,11 +568,11 @@ def _ignore_satellites(dset: "Dataset", orbit: "AprioriOrbit", orbit_flag: str) 
 
 
 def _is_epoch_in_navigation_validity_interval(
-                    time: float, 
-                    toe: float,
-                    transmission_time: float,
-                    fit_interval: float, 
-                    iode: float, 
+                    time: np.ndarray, 
+                    toe: np.ndarray,
+                    transmission_time: np.ndarray,
+                    fit_interval: np.ndarray, 
+                    iode: np.ndarray, 
                     satellite: str, 
 ) -> bool:
     """Check if GNSS observation epoch is in validity length of a broadcast navigation record 
@@ -557,9 +590,14 @@ def _is_epoch_in_navigation_validity_interval(
     """
     brdc_block_nearest_to = config.tech.brdc_block_nearest_to.str
 
-    tk = round((time - toe) * Unit.day2second, 1) #Note: Rounding to 1 decimal digit is necessary to numerical uncertainties.
+    tk = np.round((time - toe) * Unit.day2second, 1) #Note: Rounding to 1 decimal digit is necessary to numerical uncertainties.
     system = satellite[0:1]
+    if system == "E":
+        return (tk>0)
 
+    toe_limit = _get_time_of_ephemeris_limit(fit_interval, system)
+
+    return (np.abs(tk) > toe_limit)
     # Note: Only observation epochs after time of ephemeris should be used for Galileo.
     if (system == "E" and tk < 0): 
         log.debug('{:8s} {:4s} {:4.0f} {}  TRANS({})  TOE({})  abs({:7.0f}) < 0 (not positive)'.format(
