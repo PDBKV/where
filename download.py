@@ -119,6 +119,9 @@ def download_file(url: str, path: pathlib.Path) -> None:
     with open(path, mode="wb") as fid:
         c = pycurl.Curl()
         c.setopt(c.URL, url)
+        c.setopt(c.USERAGENT, "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                              "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36")
+        c.setopt(c.HTTPHEADER, ["Accept: */*", "Accept-Language: en-US,en;q=0.9"])
         c.setopt(c.FOLLOWLOCATION, True)
         c.setopt(c.WRITEDATA, fid)
         c.perform()
