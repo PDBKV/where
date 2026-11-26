@@ -2,7 +2,7 @@
 requires = [
   "scikit-build-core>=1.0", "numpy", 
   "f2py-cmake", "cython>=3.0", 
-  "cython-cmake", "requests", "pycurl"
+  "cython-cmake", "requests", "pycurl",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -58,8 +58,9 @@ no-build-isolation-package = ["where"]
 [tool.scikit-build]
 minimum-version = "build-system.requires"
 cmake.version = ">=3.21"
+ninja.version = ">=1.10"
 wheel.packages = ["where"]
-editable.mode = "redirect"        # the default, stated for clarity
+editable.mode = "redirect"
 
 [[tool.scikit-build.overrides]]
 if.state = "^editable$"
@@ -87,7 +88,7 @@ where_tools    = "where.tools:main"
 
 [dependency-groups]
 dev = [
-  "scikit-build-core>=1.0", "cmake", "ninja",
+  "scikit-build-core>=1.0", "cmake", "ninja>=1.10",
   "cython-cmake", "numpy>=2.0", "cython>=3.0",
   "black", "bump-my-version", "flake8", 
   "line_profiler", "mypy", "pytest", 
